@@ -2,6 +2,40 @@ import sys
 import os.path
 
 
+class QNode:
+    def __init__(self, val=None):
+        self.val = val
+        self.next_node = None
+        self.prev_node = None
+
+
+class Queue:
+    def __init__(self):
+        self.length = 0
+        self.head_node = None
+        self.tail_node = None
+
+    def dequeue(self):
+        if self.length == 0:
+            return None
+        curr_head_val = self.head_node.val
+        self.head_node = self.head_node.next_node
+        self.length -= 1
+        if self.length == 0:
+            self.tail_node = None
+        return curr_head_val
+
+    def enqueue(self, val):
+        if self.head_node is None:
+            self.head_node = val
+            self.tail_node = val
+        else:
+            self.tail_node.next_node = val
+            val.prev_node = self.tail_node
+            self.tail_node = val
+        self.length += 1
+
+
 class LLNode:
     def __init__(self, val, next_node=None):
         self.val = val
@@ -18,7 +52,6 @@ class LList:
         else:
             data.next_node = self.head_node
             self.head_node = data
-
 
     def show(self):
         if self.head_node is None:
@@ -61,6 +94,19 @@ def find():
 
     male_prefs = build_male_prefs()
     female_prefs = build_female_prefs()
+
+    print('checking queue implementation')
+
+    queue = Queue()
+    queue.enqueue(QNode('first'))
+    queue.enqueue(QNode('second'))
+    queue.enqueue(QNode('third'))
+
+    print(queue.dequeue())
+    print(queue.dequeue())
+    print(queue.dequeue())
+    print(queue.dequeue())
+
 
     # Start the iteration
     # while curr_man is not None and curr_man['next_proposal'] < len(women):
