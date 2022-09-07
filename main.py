@@ -65,14 +65,18 @@ class LLNode:
 class LList:
     def __init__(self):
         self.head_node = None
-        self.curr_node = 0
+        self.curr_node = self.head_node
+        self.proposal_count = 0
         self.length = 0
 
-    def get_this_proposal_index(self):
-        return self.curr_node
+    def has_more_proposals(self):
+        return self.proposal_count < self.length
 
-    def increment_proposal_index(self):
-        self.curr_node += 1
+    def get_curr_proposal_subject(self):
+        self.proposal_count += 1
+        temp = self.curr_node.val
+        self.curr_node = self.curr_node.next_node
+        return temp
 
     def prepend(self, data):
         if self.head_node is None:
@@ -80,6 +84,7 @@ class LList:
         else:
             data.next_node = self.head_node
             self.head_node = data
+        self.curr_node = self.head_node
         self.length += 1
 
     def show(self):
@@ -93,27 +98,39 @@ class LList:
                 next_node = next_node.next_node
 
 
+def to_int(str):
+    return int(str) - 1
+
+
+def cleanse_result(result):
+    if result is None:
+        return None
+    return result + 1
+
+
 def build_female_prefs():
     f = open(sys.argv[3], "r")
-    n = int(f.readline())
+    # Get
+    f.readline()
     pref_lists = []
     inverse_pref_lists = []
     for pref_line in f:
-        pref_lists.append(pref_line.split())
-        inverse_pref_lists.append(list(reversed(pref_line.split())))
+        int_pref_list = list(map(to_int, pref_line.split()))
+        pref_lists.append(int_pref_list)
+        inverse_pref_lists.append(list(reversed(int_pref_list)))
     f.close()
     return pref_lists, inverse_pref_lists
 
 
 def build_male_prefs():
     f = open(sys.argv[2], "r")
-    n = int(f.readline())
+    f.readline()
     pref_lists = []
     for pref_line in f:
         pref_list = LList()
-        prefs_arr = pref_line.split()
+        int_pref_list = list(map(to_int, pref_line.split()))
         # Uses a reverse iterator, does not actually copy the list
-        for pref in reversed(prefs_arr):
+        for pref in reversed(int_pref_list):
             pref_list.prepend(LLNode(pref))
         pref_lists.append(pref_list)
     f.close()
@@ -141,30 +158,40 @@ def find():
     unengaged_male = unengaged_males.dequeue()
 
     # While there's an unengaged male, and he still has a female to propose to
-    while unengaged_male is not None and male_prefs[unengaged_male].get_this_proposal_index() <= n:
-        curr_female = male_prefs[unengaged_male].get_this_proposal_index()
-        # If curr_woman is free, they become engaged
-        if female_matches[curr_female] is None:
-            female_matches[curr_female] = unengaged_male
-            male_matches[unengaged_male] = curr_female
-        # If curr_woman is engaged
+    while unengaged_male is not None and male_prefs[unengaged_male].has_more_proposals():
+        # Get the subject of this iteration's proposal
+        curr_proposal_subject = male_prefs[unengaged_male].get_curr_proposal_subject()
+
+        # If curr_proposal_subject is free, an engagement occurs
+        if female_matches[curr_proposal_subject] is None:
+            # The female is matched to the male
+            female_matches[curr_proposal_subject] = unengaged_male
+            # The male is matched to the female
+            male_matches[unengaged_male] = curr_proposal_subject
+
+        # But if the curr_proposal_subject is engaged already
         else:
-            # If the new match is better, the pair become engaged and the previous man returns to the men queue
-            if inverse_female_prefs[unengaged_male] < inverse_female_prefs[female_matches[curr_female]]:
-                unengaged_males.enqueue(QNode(female_matches[curr_female]))
-                female_matches[curr_female] = unengaged_male
-                male_matches[unengaged_male] = curr_female
-            # If the new match is worse, the unengaged male is rejected and returns to the men queue
+            # If the new match is better for the female
+            if inverse_female_prefs[unengaged_male] < inverse_female_prefs[female_matches[curr_proposal_subject]]:
+                # The old partner is returned to the unengaged_males queue
+                unengaged_males.enqueue(QNode(female_matches[curr_proposal_subject]))
+                # The old partner is recorded as being free
+                male_matches[female_matches[curr_proposal_subject]] = None
+                # The female is matched to the new male
+                female_matches[curr_proposal_subject] = unengaged_male
+                # The male is matched to the female
+                male_matches[unengaged_male] = curr_proposal_subject
+
+            # If the new match is worse
             else:
+                # The unengaged male is rejected and returns to the men queue
                 unengaged_males.enqueue(QNode(unengaged_male))
 
-        # Increment this male's proposal index
-        male_prefs[unengaged_male].increment_proposal_index()
         # Grab the next unengaged male for the following iteration
         unengaged_male = unengaged_males.dequeue()
 
-    print(male_matches)
-    print(female_matches)
+    print(list(map(cleanse_result, male_matches)))
+    print(list(map(cleanse_result, female_matches)))
 
 
 def check():
