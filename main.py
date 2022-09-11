@@ -138,8 +138,6 @@ def build_male_prefs():
 
 
 def find():
-    print('Finding')
-
     male_prefs = build_male_prefs()
     female_prefs, inverse_female_prefs = build_female_prefs()
 
@@ -159,11 +157,14 @@ def find():
 
     # While there's an unengaged male, and he still has a female to propose to
     while unengaged_male is not None and male_prefs[unengaged_male].has_more_proposals():
+        print('\n'
+              '-------STEP-------')
         # Get the subject of this iteration's proposal
         curr_proposal_subject = male_prefs[unengaged_male].get_curr_proposal_subject()
 
         # If curr_proposal_subject is free, an engagement occurs
         if female_matches[curr_proposal_subject] is None:
+            print(unengaged_male + 1, 'proposes to', curr_proposal_subject + 1, 'and they get engaged')
             # The female is matched to the male
             female_matches[curr_proposal_subject] = unengaged_male
             # The male is matched to the female
@@ -172,7 +173,10 @@ def find():
         # But if the curr_proposal_subject is engaged already
         else:
             # If the new match is better for the female
-            if inverse_female_prefs[unengaged_male] < inverse_female_prefs[female_matches[curr_proposal_subject]]:
+            if inverse_female_prefs[curr_proposal_subject][unengaged_male] \
+                    < inverse_female_prefs[curr_proposal_subject][female_matches[curr_proposal_subject]]:
+                print(unengaged_male + 1, 'proposes to', curr_proposal_subject + 1,
+                      'and they get engaged, she dumps her old partner')
                 # The old partner is returned to the unengaged_males queue
                 unengaged_males.enqueue(QNode(female_matches[curr_proposal_subject]))
                 # The old partner is recorded as being free
@@ -184,12 +188,13 @@ def find():
 
             # If the new match is worse
             else:
+                print(unengaged_male + 1, 'proposes to', curr_proposal_subject + 1, 'and she rejects him')
                 # The unengaged male is rejected and returns to the men queue
                 unengaged_males.enqueue(QNode(unengaged_male))
 
         # Grab the next unengaged male for the following iteration
         unengaged_male = unengaged_males.dequeue()
-
+    print('FINAL')
     print(list(map(cleanse_result, male_matches)))
     print(list(map(cleanse_result, female_matches)))
 
