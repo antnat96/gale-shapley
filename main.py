@@ -98,8 +98,12 @@ class LList:
                 next_node = next_node.next_node
 
 
-def to_int(str):
+def to_int_index(str):
     return int(str) - 1
+
+
+def to_int(str):
+    return int(str)
 
 
 def cleanse_result(result):
@@ -115,7 +119,7 @@ def build_female_prefs():
     pref_lists = []
     inverse_pref_lists = []
     for pref_line in f:
-        int_pref_list = list(map(to_int, pref_line.split()))
+        int_pref_list = list(map(to_int_index, pref_line.split()))
         pref_lists.append(int_pref_list)
         inverse_pref_lists.append(list(reversed(int_pref_list)))
     f.close()
@@ -128,7 +132,7 @@ def build_male_prefs():
     pref_lists = []
     for pref_line in f:
         pref_list = LList()
-        int_pref_list = list(map(to_int, pref_line.split()))
+        int_pref_list = list(map(to_int_index, pref_line.split()))
         # Uses a reverse iterator, does not actually copy the list
         for pref in reversed(int_pref_list):
             pref_list.prepend(LLNode(pref))
@@ -199,7 +203,9 @@ def find():
     output_file = open(sys.argv[4], "w")
     male_id = 1
     for female_id in list(map(cleanse_result, male_matches)):
-        output_file.write("{0} {1}\n".format(str(male_id), str(female_id)))
+        if male_id > 1:
+            output_file.write("\n")
+        output_file.write("{0} {1}".format(str(male_id), str(female_id)))
         male_id += 1
     output_file.close()
 
@@ -207,10 +213,40 @@ def find():
 def check():
     output_file_exists = os.path.exists(sys.argv[4])
     if output_file_exists is not True:
-        print('Please enter a valid output file name')
+        print('Please enter a valid output file name, it appears that this file does not exist.')
         return
 
-    print('Checking')
+    doubtful = open(sys.argv[4], "r")
+    matches = []
+    males = []
+    females = []
+    for matching in doubtful:
+        line = matching.split()
+        if len(line) >= 1:
+            males.append(line[0])
+        if len(line) >= 2:
+            females.append(line[1])
+        cleansed_matches = list(map(to_int, line))
+        matches.append(cleansed_matches)
+    doubtful.close()
+
+    # Check that no individual is represented more than once (matching property)
+    for gender in [males, females]:
+        for individual in gender:
+            if gender.count(individual) > 1:
+                print(individual, 'exists more than once, '
+                                  'therefore the output file fails to satisfy the matching property.')
+                return
+
+    # Check that no individual is unmatched (perfectness property)
+    male_preference_file = open(sys.argv[2], "r")
+    expected_matches_count = int(male_preference_file.readline())
+    if len(males) != expected_matches_count or len(females) != expected_matches_count:
+        print('The expected number of matches from the male preference file is different than the number of matches in'
+              'the output file, therefore the output file fails to satisfy the perfectness property.')
+
+    # Check that each match is stable (stability property)
+    print('Stability Check in progress')
 
 
 def gs():
