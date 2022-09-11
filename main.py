@@ -194,9 +194,14 @@ def find():
 
         # Grab the next unengaged male for the following iteration
         unengaged_male = unengaged_males.dequeue()
-    print('FINAL')
-    print(list(map(cleanse_result, male_matches)))
-    print(list(map(cleanse_result, female_matches)))
+
+    # Write to the output file
+    output_file = open(sys.argv[4], "w")
+    male_id = 1
+    for female_id in list(map(cleanse_result, male_matches)):
+        output_file.write("{0} {1}\n".format(str(male_id), str(female_id)))
+        male_id += 1
+    output_file.close()
 
 
 def check():
