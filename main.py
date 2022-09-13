@@ -69,6 +69,27 @@ class LList:
         self.proposal_count = 0
         self.length = 0
 
+    def prefers(self, first, second):
+        if self.head_node is None:
+            return False
+        if self.head_node.next_node is None:
+            return False
+
+        node = self.head_node
+        found_first = False
+        found_second = False
+        while node is not None:
+            if node.val == first:
+                found_first = True
+            if node.val == second:
+                found_second = True
+            if found_first is True and found_second is False:
+                return True
+            elif found_second is True and found_first is False:
+                return False
+            node = node.next_node
+
+
     def has_more_proposals(self):
         return self.proposal_count < self.length
 
@@ -210,6 +231,20 @@ def find():
     output_file.close()
 
 
+def find_curr_partner_female(female_index, matches):
+    for match in matches:
+        if match[1] == female_index:
+            return match[0]
+    return None
+
+
+def find_curr_partner_male(male_index, matches):
+    for match in matches:
+        if match[0] == male_index:
+            return match[1]
+    return None
+
+
 def check():
     output_file_exists = os.path.exists(sys.argv[4])
     if output_file_exists is not True:
@@ -223,10 +258,10 @@ def check():
     for matching in doubtful:
         line = matching.split()
         if len(line) >= 1:
-            males.append(line[0])
+            males.append(int(line[0]))
         if len(line) >= 2:
-            females.append(line[1])
-        cleansed_matches = list(map(to_int, line))
+            females.append(int(line[1]))
+        cleansed_matches = list(map(to_int_index, line))
         matches.append(cleansed_matches)
     doubtful.close()
 
@@ -240,13 +275,50 @@ def check():
 
     # Check that no individual is unmatched (perfectness property)
     male_preference_file = open(sys.argv[2], "r")
-    expected_matches_count = int(male_preference_file.readline())
+    female_preference_file = open(sys.argv[3], "r")
+    expected_matches_count_males = int(male_preference_file.readline())
+    expected_matches_count_females = int(female_preference_file.readline())
+    # Ensure preference files have the same n value
+    if expected_matches_count_females != expected_matches_count_males:
+        print('The preference files do not have matching n values, therefore the perfectness property '
+              'cannot be satisfied')
+        return
+
+    # Ensure output file and preference files have the same n value
+    expected_matches_count = expected_matches_count_males
     if len(males) != expected_matches_count or len(females) != expected_matches_count:
-        print('The expected number of matches from the male preference file is different than the number of matches in'
+        print('The expected number of matches from the preference files is different than the number of matches in'
               'the output file, therefore the output file fails to satisfy the perfectness property.')
+        return
 
     # Check that each match is stable (stability property)
-    print('Stability Check in progress')
+    # Build preference lists
+    male_prefs = build_male_prefs()
+    female_prefs, inverse_female_prefs = build_female_prefs()
+
+    female_index = 0
+    for female in females:
+        # Find the males that are preferable to this female's current partner, if any
+        preferable_males = []
+        curr_male_partner = find_curr_partner_female(female_index, matches)
+        if curr_male_partner is None:
+            print('Could not find the current partner of female', female)
+            return
+        for pref in female_prefs[female_index]:
+            if pref == curr_male_partner:
+                break
+            preferable_males.append(pref)
+        # Ensure each of those preferable males would not prefer this female to his current partner
+        for male in preferable_males:
+            curr_female_partner = find_curr_partner_male(male, matches)
+            if male_prefs[male].prefers(female_index, curr_female_partner):
+                print('male', male + 1, 'prefers female', female, 'to female', curr_female_partner + 1,
+                      'therefore the matching is unstable')
+                return
+
+        female_index += 1
+
+    print('The matching is perfect and stable!')
 
 
 def gs():
