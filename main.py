@@ -9,8 +9,8 @@
 #       indicating why the matching is unstable.
 
 # Example Commands to Program:
-# python main.py find male_prefs female_prefs output
-# python main.py check male_prefs female_prefs output
+# python main.py find males females output
+# python main.py check males females output
 
 
 # Imports
@@ -89,7 +89,6 @@ class LList:
                 return False
             node = node.next_node
 
-
     def has_more_proposals(self):
         return self.proposal_count < self.length
 
@@ -119,12 +118,12 @@ class LList:
                 next_node = next_node.next_node
 
 
-def to_int_index(str):
-    return int(str) - 1
+def to_int_index(my_str):
+    return int(my_str) - 1
 
 
-def to_int(str):
-    return int(str)
+def to_int(my_str):
+    return int(my_str)
 
 
 def cleanse_result(result):
@@ -135,14 +134,16 @@ def cleanse_result(result):
 
 def build_female_prefs():
     f = open(sys.argv[3], "r")
-    # Get
-    f.readline()
+    n = int(f.readline())
     pref_lists = []
     inverse_pref_lists = []
     for pref_line in f:
         int_pref_list = list(map(to_int_index, pref_line.split()))
         pref_lists.append(int_pref_list)
-        inverse_pref_lists.append(list(reversed(int_pref_list)))
+        inverse_pref_list = [None] * n
+        for i in int_pref_list:
+            inverse_pref_list[int_pref_list[i]] = i
+        inverse_pref_lists.append(inverse_pref_list)
     f.close()
     return pref_lists, inverse_pref_lists
 
@@ -180,10 +181,11 @@ def find():
 
     unengaged_male = unengaged_males.dequeue()
 
+    step = 1
+
     # While there's an unengaged male, and he still has a female to propose to
     while unengaged_male is not None and male_prefs[unengaged_male].has_more_proposals():
-        print('\n'
-              '-------STEP-------')
+        print("-----STEP {0}------".format(step))
         # Get the subject of this iteration's proposal
         curr_proposal_subject = male_prefs[unengaged_male].get_curr_proposal_subject()
 
@@ -219,6 +221,7 @@ def find():
 
         # Grab the next unengaged male for the following iteration
         unengaged_male = unengaged_males.dequeue()
+        step += 1
 
     # Write to the output file
     output_file = open(sys.argv[4], "w")
@@ -229,6 +232,7 @@ def find():
         output_file.write("{0} {1}".format(str(male_id), str(female_id)))
         male_id += 1
     output_file.close()
+    print("Done writing output to {0}".format(sys.argv[4]))
 
 
 def find_curr_partner_female(female_index, matches):
@@ -318,7 +322,7 @@ def check():
 
         female_index += 1
 
-    print('The matching is perfect and stable!')
+    print('The matching is stable!')
 
 
 def gs():
